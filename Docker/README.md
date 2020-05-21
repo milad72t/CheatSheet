@@ -164,11 +164,76 @@ $ docker run -v /dbdata --name dbstore2 ubuntu /bin/bash
 $ docker run --rm --volumes-from dbstore2 -v $(pwd):/backup ubuntu bash -c "cd /dbdata && tar xvf /backup/backup.tar --strip 1"
 ```
 
+## Docker Network
+when install Docker Engine creates three networks automatically: bridge, host, none
+
+in bridge Each container is assigned its own private IP address which is not reachable from the outside by default  
+On user-defined containers can not only communicate by IP address, but can also resolve a container name to an IP address
+* Creating a bridge network
+```
+$ docker network create --driver bridge my-network
+```
+* add the –network parameter to the run command
+```
+$ docker run -it --name alpine1 --network my-network alpine bash
+```
+* Inspecting a network
+```
+$ docker network inspect bridge
+```
+
+When a container is connected to the host network, it gets the same network configuration as in the host OS 
+
+In none network mode, containers are not attached to any network and do not have any access to the external network or other containers
+
 
 ## Dockerfile
 * Build an image from Dockerfile in current directory
 ```
 $ docker build --tag myimage .
+```
+
+### Basic Commands
+* FROM – Defines the base image to use and start the build process.
+* RUN – It takes the command and its arguments to run it from the image.
+* CMD – Similar function as a RUN command, but it gets executed only after the container is instantiated (specifies arguments that will be fed to the ENTRYPOINT).
+* ENTRYPOINT – specifies a command that will always be executed when the container starts.
+* ADD – It copies the files from source to destination (inside the container).
+* ENV – Sets environment variables.
+
+> CMD vs ENTRYPOINT: the main point to remember is CMD is used to provide default executable and arguments, which can be overridden, while ENTRYPOINT is used to specify specific executable and arguments, to constraint the usage of image
+
+### MongoDB dockerfile example
+```
+# Set the base image to Ubuntu
+FROM ubuntu
+
+# Update the repository sources list and install gnupg2
+RUN apt-get update && apt-get install -y gnupg2
+
+# Add the package verification key
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
+
+# Add MongoDB to the repository sources list
+RUN echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' > tee /etc/apt/sources.list.d/mongodb.list
+
+# Update the repository sources list
+RUN apt-get update
+
+# Install MongoDB package (.deb)
+RUN apt-get install -y mongodb
+
+# Create the default data directory
+RUN mkdir -p /data/db
+
+# Expose the default port
+EXPOSE 27017
+
+# Default port to execute the entrypoint (MongoDB)
+CMD ["--port 27017"]
+
+# Set default container command
+ENTRYPOINT usr/bin/mongodb
 ```
 
 ### Simple node dockerfile example 
