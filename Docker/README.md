@@ -1,11 +1,11 @@
 # Docker cheat sheet
 
-* [Docker Commands](docker-commands)
-* [Docker Volumes](docker-volumes)
-* [Docker Network](docker-network)
-* [Dockerfile](dockerfile)
-* [Docker-Compose](dokcer-compose)
-* [Other Resources](other-resources)
+* [Docker Commands](#docker-commands)
+* [Docker Volumes](#docker-volumes)
+* [Docker Network](#docker-network)
+* [Dockerfile](#dockerfile)
+* [Docker-Compose](#dokcer-compose)
+* [Other Resources](#other-resources)
 
 ## Docker Commands
 * Stop, Start or Restart container by ID or name
@@ -228,6 +228,114 @@ http.listen(8695, function(){
     console.log('Listening on Port 8695 ');
 });
 ```
+
+## Docker Compose
+
+#### Basic config example
+docker-compose.yml
+```YAML
+version: '3'
+
+services:
+  web:
+    build: .
+    context: ./Path
+    dockerfile: Dockerfile
+    environment:
+      - RACK_ENV=development
+    env_file: .env
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/code
+    depends_on:
+      - redis
+  redis:
+    image: redis
+    restart: always
+    volumes:
+      - /var/lib/redis
+      - ./_data:/var/lib/redis
+```
+
+#### Commands
+Starts existing containers for a service.
+>docker-compose start
+
+Stops running containers without removing them.
+>docker-compose stop
+
+Pauses running containers of a service.
+>docker-compose pause
+
+Unpauses paused containers of a service.
+>docker-compose unpause
+
+Lists containers.
+>docker-compose ps
+
+Builds, (re)creates, starts, and attaches to containers for a service.
+>docker-compose up
+
+Stops containers and removes containers, networks, volumes, and images created by up.
+>docker-compose down
+
+#### Network
+By default Compose sets up a single network for your app. For Example:
+``` YAML
+version: "3"
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+  db:
+    image: postgres
+    ports:
+      - "8001:5432"
+```
+When you run docker-compose up, the following happens:
+
+1. A network called ``myapp_default`` is created.
+2. A container is created using ``web``’s configuration. It joins the network ``myapp_default`` under the name ``web``.
+3. A container is created using ``db``’s configuration. It joins the network ``myapp_default`` under the name ``db``.
+
+It is important to note the distinction between ``HOST_PORT`` and ``CONTAINER_PORT``. In the above example, for db, the ``HOST_PORT`` is ``8001`` and the container port is ``5432``.
+
+Within the ``web`` container, your connection string to ``db`` would look like ``postgres://db:5432``, and from the host machine, the connection string would look like ``postgres://{DOCKER_IP}:8001``.
+
+Instead of just using the default app network, you can specify your own networks with the top-level ``networks`` key.
+```YAML
+version: "3"
+services:
+
+  proxy:
+    build: ./proxy
+    networks:
+      - frontend
+  app:
+    build: ./app
+    networks:
+      - frontend
+      - backend
+  db:
+    image: postgres
+    networks:
+      - backend
+
+networks:
+  frontend:
+    # Use a custom driver
+    driver: custom-driver-1
+  backend:
+    # Use a custom driver which takes special options
+    driver: custom-driver-2
+    driver_opts:
+      foo: "1"
+      bar: "2"
+```
+ The proxy service is isolated from the db service, because they do not share a network in common - only app can talk to both.
+
 
 ## Other Resources
 
